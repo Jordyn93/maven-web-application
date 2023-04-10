@@ -1,0 +1,69 @@
+pipeline{
+  agent {
+    label 'agent1'
+  } 
+  tools {
+    maven 'maven3.9.1'
+  }
+  //options{}
+  //triggers{}
+  stages {
+    stage('1Clone'){
+      steps{
+        sh "echo 'cloning the latest application version' "
+        git "https://github.com/Jordyn93/maven-web-application"
+        sh "echo 'latest application version available for testing and build' "
+      }
+    }
+    stage('2TestBuild'){
+      steps{
+        sh "echo 'running JUnit-test-cases' "
+        sh "echo 'testing must passed to create artifacts ' "
+        sh "mvn clean package" 
+      }
+    }
+   stage('3CodeQualityAnalysis') {
+    steps{
+        sh "echo setup sonarQube authentication"
+        sh "echo 'Perfoming CodeQualityAnalysis' "
+        sh "mvn sonar:sonar"      
+    }
+   }
+   stage('4UploadArtifacts') {
+    steps{
+      sh "echo configure nexus authentication"
+      //sh "mvn deploy"
+      sh "echo artifacts uploaded"
+    }
+   }
+  stage('5deploy') {
+    steps{
+      deploy adapters: [tomcat9(credentialsId: 'tomcat2-credentials', path: '', url: 'http://3.9.178.136:8177')], contextPath: null, war: 'target/*war'
+        }
+   }
+
+  //stage('5deploy') {}
+  }
+ post{ 
+    always{
+emailext body: '''Great Job team
+
+JoyceOlulu''', recipientProviders: [buildUser()], subject: 'Build Success', to: 'joyceolulu@gmail.com'
+
+    }
+    success{
+emailext body: '''Great Job team
+
+JoyceOlulu''', recipientProviders: [buildUser()], subject: 'Build Success', to: 'joyceolulu@gmail.com'
+
+    }
+    failure{
+emailext body: '''Please review team
+
+JoyceOlulu''', recipientProviders: [buildUser()], subject: 'Build Failure', to: 'joyceolulu@gmail.com'
+
+    }
+
+}
+
+}
